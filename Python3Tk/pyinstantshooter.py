@@ -14,14 +14,28 @@ import os
 import sys
 import shutil
 import subprocess
+import zipfile
 import tkinter as tk
 from tkinter import ttk
 
 import plugin.Plugin as loadPlugin
 
-APP_DIR = os.path.dirname(os.path.abspath(__file__))
-PLUGINS_DIR = os.path.join(os.path.dirname(APP_DIR), 'plugins')
 PLATFORM = os.name
+
+
+def _plugins_dir():
+    # PyInstaller frozen binary
+    if getattr(sys, 'frozen', False):
+        return os.path.join(sys._MEIPASS, 'plugins')
+    # zipapp .pyz — plugins sit next to the archive
+    exe = os.path.abspath(sys.argv[0])
+    if os.path.isfile(exe) and zipfile.is_zipfile(exe):
+        return os.path.join(os.path.dirname(exe), 'plugins')
+    # Normal script inside Python3Tk/
+    return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'plugins')
+
+
+PLUGINS_DIR = _plugins_dir()
 
 BUTTONS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
 
@@ -83,8 +97,8 @@ def on_plugin_change(event=None):
     update_icons(selected)
 
 
-if __name__ == '__main__':
-    print("init")
+def main():
+    global combo
 
     root = tk.Tk()
     root.title("Instant Shooter")
@@ -116,3 +130,7 @@ if __name__ == '__main__':
     combo.bind('<<ComboboxSelected>>', on_plugin_change)
 
     root.mainloop()
+
+
+if __name__ == '__main__':
+    main()
