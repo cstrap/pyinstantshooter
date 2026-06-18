@@ -1,0 +1,184 @@
+# pyInstantShooter
+
+App     : pyInstantShooter 2.0 - cross platform
+Author  : Strap
+Website : http://www.strap.it
+Year    : 2009
+License  : Creative Commons BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+E-mail  : pyinstantshooter@strap.it
+
+
+## Cos'è
+
+pyInstantShooter è una "soundboard": una piccola applicazione grafica con una
+griglia di 9 pulsanti, ognuno dei quali riproduce un effetto sonoro quando viene
+premuto. È pensata per lanciare al volo applausi, risate, clacson e altri effetti
+durante chiacchierate, dirette o partite.
+
+I suoni e le icone sono raggruppati in **plugin**: ogni plugin è un set tematico
+di 9 suoni con le relative icone. Un menu a tendina in basso permette di passare
+da un plugin all'altro a runtime, e i pulsanti aggiornano automaticamente icone e
+suoni in base al plugin selezionato.
+
+Plugin inclusi:
+
+- **Default** — set di base, fornisce anche le icone di riserva (vedi sotto)
+- **Strap**
+- **Lemmings**
+- **vuvuzela**
+
+
+## Due versioni, plugin condivisi
+
+Il repository contiene due versioni indipendenti dell'app — il codice e
+l'interfaccia sono separati per versione — mentre i **plugin (suoni e icone) sono
+in un'unica cartella condivisa** `plugins/` nella root, usata da entrambe:
+
+```text
+pyinstantshooter/
+├── plugins/        # CONDIVISA fra le due versioni: suoni + icone
+│   ├── Default/    # set di base, fornisce le icone di fallback
+│   ├── Strap/
+│   ├── Lemmings/
+│   └── vuvuzela/
+│
+├── Python2/        # versione storica (vecchia) — Python 2 + PyGTK / GTK 2 / libglade
+│   ├── pyinstantshooter.py
+│   ├── gui/
+│   │   ├── pyinstantshooter.glade
+│   │   └── pixmaps/
+│   └── plugin/
+│       ├── __init__.py
+│       └── Plugin.py               # loader dei plugin (codice, per-versione)
+│
+└── Python3/        # versione più recente e aggiornata — Python 3 + PyGObject / GTK 3
+    ├── pyinstantshooter.py
+    ├── gui/
+    │   ├── pyinstantshooter.ui      # formato GtkBuilder
+    │   └── pixmaps/
+    └── plugin/
+        ├── __init__.py
+        └── Plugin.py                # loader dei plugin (codice, per-versione)
+```
+
+Ogni versione risolve la cartella `plugins/` condivisa rispetto alla posizione del
+proprio script (`../plugins`), quindi i plugin vanno aggiunti **una sola volta** e
+sono subito disponibili in entrambe. Il modulo `plugin/Plugin.py` (il loader) resta
+invece per-versione, perché la sintassi Python 2 e Python 3 differiscono.
+
+Per il nuovo sviluppo usa la versione **Python3/**; la cartella **Python2/** è
+conservata come riferimento storico.
+
+
+## Come funziona
+
+- L'interfaccia è descritta in `gui/` (libglade nella versione Python 2,
+  GtkBuilder `.ui` nella versione Python 3) e caricata a runtime.
+- I 9 pulsanti hanno id `one` … `nine`; premendone uno viene riprodotto il file
+  `plugins/<plugin selezionato>/sounds/<nome pulsante>.wav` dalla cartella
+  condivisa.
+- Le icone vengono lette da `plugins/<plugin selezionato>/icons/<numero>.png`; se
+  un'icona manca nel plugin scelto, viene usata quella corrispondente del plugin
+  `Default` come fallback.
+- La riproduzione audio è cross platform:
+  - **Windows**: tramite `winsound`
+  - **Linux/POSIX** (Python 3): tramite il primo player disponibile fra
+    `paplay`, `aplay`, `ffplay`
+  - **Linux/POSIX** (Python 2): tramite GNOME sound, se disponibile, altrimenti
+    via OSS (`ossaudiodev`, dispositivo `/dev/dsp`)
+
+
+## Sistemi supportati
+
+L'applicazione è cross platform e gira ovunque siano disponibili Python e le
+dipendenze grafiche:
+
+- **Linux / *BSD (POSIX)**
+- **Windows**
+
+### Dipendenze
+
+Versione **Python 3** (consigliata):
+
+- Python 3
+- PyGObject (`gi`) e GTK 3
+- Su Linux, uno fra `paplay` (PulseAudio), `aplay` (ALSA) o `ffplay` per l'audio
+
+Versione **Python 2** (storica):
+
+- Python 2
+- PyGTK (`gtk`, `gtk.glade`) e GTK 2
+- Su Linux, opzionalmente i binding `gnome`; in alternativa il supporto OSS
+  (`ossaudiodev`)
+
+
+## Avvio
+
+Le risorse (interfaccia e cartella `plugins/` condivisa) vengono risolte rispetto
+alla posizione dello script, quindi puoi lanciarlo da qualsiasi directory; gli
+esempi seguenti usano `cd` solo per comodità.
+
+Versione Python 3:
+
+```sh
+cd Python3
+python3 pyinstantshooter.py
+```
+
+Versione Python 2:
+
+```sh
+cd Python2
+python pyinstantshooter.py
+```
+
+
+## Come creare un plugin
+
+Un plugin è semplicemente una cartella dentro la directory condivisa `plugins/`
+(nella root del repository), con questa struttura:
+
+```text
+plugins/
+└── NomePlugin/
+    ├── sounds/
+    │   ├── one.wav
+    │   ├── two.wav
+    │   ├── three.wav
+    │   ├── four.wav
+    │   ├── five.wav
+    │   ├── six.wav
+    │   ├── seven.wav
+    │   ├── eight.wav
+    │   └── nine.wav
+    └── icons/
+        ├── one.png
+        ├── two.png
+        ├── three.png
+        ├── four.png
+        ├── five.png
+        ├── six.png
+        ├── seven.png
+        ├── eight.png
+        └── nine.png
+```
+
+Regole da rispettare:
+
+1. **Nome della cartella** = nome con cui il plugin appare nel menu a tendina.
+   Evita i nomi riservati: `Default` (fallback delle icone) viene gestito a parte
+   e vengono ignorati dal loader i nomi che terminano in `.py` / `.pyc`, le
+   cartelle `.svn` e `__pycache__`.
+2. **Suoni**: nella sottocartella `sounds/` servono i file `one.wav` … `nine.wav`,
+   uno per ciascuno dei 9 pulsanti. Usa file WAV.
+3. **Icone**: nella sottocartella `icons/` metti `one.png` … `nine.png`. Le icone
+   sono opzionali: quelle mancanti vengono rimpiazzate automaticamente dalle icone
+   del plugin `Default`. Dimensione consigliata: 48×48 px.
+
+Al successivo avvio dell'applicazione il nuovo plugin comparirà automaticamente
+nell'elenco: il loader analizza la cartella condivisa `plugins/`, ordina i plugin
+in ordine alfabetico e mette `Default` come prima voce.
+
+> Poiché la cartella `plugins/` è condivisa, un plugin aggiunto qui è
+> immediatamente disponibile in **entrambe** le versioni (Python 2 e Python 3),
+> senza bisogno di copiarlo.

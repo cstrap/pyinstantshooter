@@ -5,12 +5,12 @@ import os
 import re
 
 
-def loader(directory='plugin'):
-
+def loader(directory):
+    """ Return the sorted plugin names found in the shared plugins directory. """
     plugin_list = []
     c = re.compile(r"(.(\.py|\.pyc)$)|(Default)|(\.svn)|(__pycache__)")
 
-    for plug in os.listdir(os.path.join(os.getcwd(), directory)):
+    for plug in os.listdir(directory):
         if not c.findall(plug):
             print("Adding", plug)
             plugin_list.append(plug)
@@ -21,4 +21,4 @@ def loader(directory='plugin'):
 
 
 if __name__ == "__main__":
-    loader('')
+    loader('.')

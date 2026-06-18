@@ -5,19 +5,19 @@ import os
 import sys
 import re
 
-def loader(directory = 'plugin'):
+def loader(directory):
 
-    plugin_list = [] 
+    plugin_list = []
     c = re.compile(r"(.(\.py|\.pyc)$)|(Default)|(\.svn)")
-    
-    for plug in os.listdir(os.path.join(os.getcwd(), directory)):
+
+    for plug in os.listdir(directory):
         if not c.findall(plug):
             print "Adding", plug
             plugin_list.append(plug)
     plugin_list.sort()
     plugin_list.insert(0, 'Default')
-    
+
     return plugin_list
-    
+
 if __name__ == "__main__":
-    loader('')
+    loader('.')
