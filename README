@@ -28,21 +28,21 @@ Plugin inclusi:
 - **vuvuzela**
 
 
-## Due versioni, plugin condivisi
+## Tre versioni, plugin condivisi
 
-Il repository contiene due versioni indipendenti dell'app — il codice e
+Il repository contiene tre versioni indipendenti dell'app — il codice e
 l'interfaccia sono separati per versione — mentre i **plugin (suoni e icone) sono
-in un'unica cartella condivisa** `plugins/` nella root, usata da entrambe:
+in un'unica cartella condivisa** `plugins/` nella root, usata da tutte:
 
 ```text
 pyinstantshooter/
-├── plugins/        # CONDIVISA fra le due versioni: suoni + icone
+├── plugins/        # CONDIVISA fra tutte le versioni: suoni + icone
 │   ├── Default/    # set di base, fornisce le icone di fallback
 │   ├── Strap/
 │   ├── Lemmings/
 │   └── vuvuzela/
 │
-├── Python2/        # versione storica (vecchia) — Python 2 + PyGTK / GTK 2 / libglade
+├── Python2/        # versione storica — Python 2 + PyGTK / GTK 2 / libglade
 │   ├── pyinstantshooter.py
 │   ├── gui/
 │   │   ├── pyinstantshooter.glade
@@ -51,11 +51,17 @@ pyinstantshooter/
 │       ├── __init__.py
 │       └── Plugin.py               # loader dei plugin (codice, per-versione)
 │
-└── Python3/        # versione più recente e aggiornata — Python 3 + PyGObject / GTK 3
+├── Python3/        # versione GTK — Python 3 + PyGObject / GTK 3
+│   ├── pyinstantshooter.py
+│   ├── gui/
+│   │   ├── pyinstantshooter.ui      # formato GtkBuilder
+│   │   └── pixmaps/
+│   └── plugin/
+│       ├── __init__.py
+│       └── Plugin.py                # loader dei plugin (codice, per-versione)
+│
+└── Python3Tk/      # versione Tkinter — Python 3 + tkinter (nessuna dep. esterna)
     ├── pyinstantshooter.py
-    ├── gui/
-    │   ├── pyinstantshooter.ui      # formato GtkBuilder
-    │   └── pixmaps/
     └── plugin/
         ├── __init__.py
         └── Plugin.py                # loader dei plugin (codice, per-versione)
@@ -63,27 +69,32 @@ pyinstantshooter/
 
 Ogni versione risolve la cartella `plugins/` condivisa rispetto alla posizione del
 proprio script (`../plugins`), quindi i plugin vanno aggiunti **una sola volta** e
-sono subito disponibili in entrambe. Il modulo `plugin/Plugin.py` (il loader) resta
-invece per-versione, perché la sintassi Python 2 e Python 3 differiscono.
+sono subito disponibili in tutte le versioni. Il modulo `plugin/Plugin.py` (il
+loader) resta per-versione.
 
-Per il nuovo sviluppo usa la versione **Python3/**; la cartella **Python2/** è
-conservata come riferimento storico.
+Per il nuovo sviluppo usa la versione **Python3Tk/**; non richiede dipendenze
+esterne oltre a Python 3. La cartella **Python3/** richiede PyGObject/GTK 3, la
+cartella **Python2/** è conservata come riferimento storico.
 
 
 ## Come funziona
 
-- L'interfaccia è descritta in `gui/` (libglade nella versione Python 2,
-  GtkBuilder `.ui` nella versione Python 3) e caricata a runtime.
 - I 9 pulsanti hanno id `one` … `nine`; premendone uno viene riprodotto il file
   `plugins/<plugin selezionato>/sounds/<nome pulsante>.wav` dalla cartella
   condivisa.
 - Le icone vengono lette da `plugins/<plugin selezionato>/icons/<numero>.png`; se
   un'icona manca nel plugin scelto, viene usata quella corrispondente del plugin
   `Default` come fallback.
+- L'interfaccia grafica varia per versione:
+  - **Python3Tk**: interfaccia costruita interamente via `tkinter` — nessun file
+    `.ui` o `.glade`, tutto in codice Python
+  - **Python3**: interfaccia descritta in `gui/pyinstantshooter.ui` (GtkBuilder)
+  - **Python2**: interfaccia descritta in `gui/pyinstantshooter.glade` (libglade)
 - La riproduzione audio è cross platform:
   - **Windows**: tramite `winsound`
-  - **Linux/POSIX** (Python 3): tramite il primo player disponibile fra
-    `paplay`, `aplay`, `ffplay`
+  - **macOS**: tramite `afplay`
+  - **Linux/POSIX** (Python 3 / Python3Tk): tramite il primo player disponibile
+    fra `paplay`, `aplay`, `ffplay`
   - **Linux/POSIX** (Python 2): tramite GNOME sound, se disponibile, altrimenti
     via OSS (`ossaudiodev`, dispositivo `/dev/dsp`)
 
@@ -94,17 +105,23 @@ L'applicazione è cross platform e gira ovunque siano disponibili Python e le
 dipendenze grafiche:
 
 - **Linux / *BSD (POSIX)**
+- **macOS**
 - **Windows**
 
 ### Dipendenze
 
-Versione **Python 3** (consigliata):
+Versione **Python3Tk** (consigliata — nessuna dipendenza esterna):
+
+- Python 3 (tkinter incluso nella distribuzione standard)
+- Su Linux, uno fra `paplay` (PulseAudio), `aplay` (ALSA) o `ffplay` per l'audio
+
+Versione **Python3** (GTK):
 
 - Python 3
 - PyGObject (`gi`) e GTK 3
 - Su Linux, uno fra `paplay` (PulseAudio), `aplay` (ALSA) o `ffplay` per l'audio
 
-Versione **Python 2** (storica):
+Versione **Python2** (storica):
 
 - Python 2
 - PyGTK (`gtk`, `gtk.glade`) e GTK 2
@@ -114,18 +131,25 @@ Versione **Python 2** (storica):
 
 ## Avvio
 
-Le risorse (interfaccia e cartella `plugins/` condivisa) vengono risolte rispetto
-alla posizione dello script, quindi puoi lanciarlo da qualsiasi directory; gli
-esempi seguenti usano `cd` solo per comodità.
+Le risorse (cartella `plugins/` condivisa) vengono risolte rispetto alla posizione
+dello script, quindi puoi lanciarlo da qualsiasi directory; gli esempi seguenti
+usano `cd` solo per comodità.
 
-Versione Python 3:
+Versione Python3Tk (consigliata):
+
+```sh
+cd Python3Tk
+python3 pyinstantshooter.py
+```
+
+Versione Python3 (GTK):
 
 ```sh
 cd Python3
 python3 pyinstantshooter.py
 ```
 
-Versione Python 2:
+Versione Python2:
 
 ```sh
 cd Python2
@@ -180,5 +204,5 @@ nell'elenco: il loader analizza la cartella condivisa `plugins/`, ordina i plugi
 in ordine alfabetico e mette `Default` come prima voce.
 
 > Poiché la cartella `plugins/` è condivisa, un plugin aggiunto qui è
-> immediatamente disponibile in **entrambe** le versioni (Python 2 e Python 3),
-> senza bisogno di copiarlo.
+> immediatamente disponibile in **tutte e tre** le versioni (Python2, Python3,
+> Python3Tk), senza bisogno di copiarlo.
